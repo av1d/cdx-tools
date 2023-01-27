@@ -11,6 +11,7 @@ import os
 import random
 import requests
 import sys
+import threading
 import urllib.parse
 
 from pathlib import Path
@@ -44,6 +45,10 @@ def banner():
 def sep():
     return "------------\n"
 
+
+def progress():
+    sys.stdout.write(".")
+    sys.sleep(1)
 
 
  #########################################
@@ -465,6 +470,15 @@ def setup():
         args['collapse'] = 'urlkey'
 
 
+    # if we didn't specify statuscode or order, we'll specify fields to return
+    # so that it's quicker. We don't need statuscode field because if not
+    # specified, the default statuscode when not specified is http 200,
+    # so it is pointless to not use this.
+    if args['no_stat'] == None or args['yes_stat'] == None:
+        if args['order'] == None:
+            args['order'] = ['timestamp', 'url']
+
+
     if args['yes_stat'] == None:   # set default http 200 status
         args['filter'] = 'statuscode:200'
         del args['yes_stat']
@@ -616,7 +630,7 @@ def fetchResponse():
         clientVersion = "cdx-query/" + version
         headers = {"User-Agent": clientVersion}
 
-
+        #Download the response
         try:
             response = requests.get(
                                         URL,
@@ -628,15 +642,13 @@ def fetchResponse():
             raise SystemExit("Connection timed out")
         except requests.exceptions.RequestException as e:
             raise SystemExit(e)
-    
+     
         print(response.status_code, response.reason)
-    
+
         status_code = str(response.status_code)
         if status_code != "200":  # exit unless 200
             print("Received HTTP status: " + status_code)
             sys.exit(0)
-
-
 
         cdx_response = json.loads(response.text)  # parse
 
