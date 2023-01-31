@@ -24,7 +24,7 @@ version = '0.4b'
 #-------------------------------------#
 
 # download script generation is currently broken...
-# nothing serious, jsut change the wget and curl command strings
+# nothing serious, just change the wget and curl command strings
 
 def banner():
     info1  = "+----------------------------+"
