@@ -4,8 +4,6 @@
 import time
 startTime = time.time()
 import argparse
-import ijson
-
 import json
 import os
 import os.path
