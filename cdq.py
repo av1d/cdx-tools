@@ -569,9 +569,14 @@ def cdxToDict(cdx_response):
     n = json.loads(cdx_response)
     
     keys = []  # holds JSON keys
-    for i in n[0]:
-        keys.append(i)  # add the keys to the list
-    
+
+    try:
+        for i in n[0]:
+            keys.append(i)  # add the keys to the list
+    except:
+        print("Invalid response found. Check contents of cdx-tools.temp file.")
+        sys.exit(1)
+
     x = [dict(zip(keys, l)) for l in n]  # create list of dictionaries
     x.pop(0)  # remove first line containing JSON keys
     
@@ -619,10 +624,10 @@ def fetchResponse():
             print("Received HTTP status: " + status_code)
             sys.exit(0)
 
-        with open('cdx.tmp', 'w') as f:  # save in case it crashes processing
+        with open('cdx-tools.temp', 'w') as f:  # save in case it crashes processing
             f.write(str(response.content))
 
-        print("Request complete. Saved to temp file cdx.temp. Processing...")
+        print("Request complete. Saved to temp file cdx-tools.temp. Processing...")
 
         cdx_out = cdxToDict(response.text)
 
