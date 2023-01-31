@@ -20,6 +20,7 @@ from urllib.parse import unquote
 from urllib.parse import urlencode
 
 
+
 version = '0.8b'
 
 #-----------------------------------#
@@ -410,8 +411,17 @@ def setup():
             if "https://" in args['url']:
                 args['url'] = args['url'].replace("https://", "")
 
-        if "?" in args['url']:  # if URL contains a query we must encode it.
-            args['url'] = urllib.parse.quote_plus(args['url'])
+    if "/" in args['url']:  # if / after we stripped scheme
+        if args['matchtype'] == None:
+            print(
+                "/ found in URL. You should likely be using the argument -m prefix \n"
+                "if the URL looks like: example.com/something/ instead of example.com\n"
+                "Otherwise, remove the slash to avoid this message.\n"
+            )
+            sys.exit(0)
+
+    if "?" in args['url']:  # if URL contains a query we must encode it.
+        args['url'] = urllib.parse.quote_plus(args['url'])
 
     ###################################
     ##  Set default params
@@ -609,7 +619,10 @@ def fetchResponse():
             print("Received HTTP status: " + status_code)
             sys.exit(0)
 
-        print("Request complete. Processing...")
+        with open('cdx.tmp', 'w') as f:  # save in case it crashes processing
+            f.write(str(response.content))
+
+        print("Request complete. Saved to temp file cdx.temp. Processing...")
 
         cdx_out = cdxToDict(response.text)
 
