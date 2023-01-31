@@ -13,7 +13,6 @@ import sys
 from pathlib import Path
 from requests.utils import quote
 from urllib.parse import urlparse
-
 from pympler.asizeof import asizeof
 
 version = '0.4b'
