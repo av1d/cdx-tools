@@ -23,6 +23,7 @@ version = '0.4b'
 #  https://github.com/av1d/cdx-tools  #
 #-------------------------------------#
 
+# script output is currently broken...
 
 
 def banner():
