@@ -5,3 +5,9 @@ The best way to understand it is to issue the --help argument or [read this](htt
 If you find a bug or something can be made better don't hesitate to tell me.
 This software is private, do not distribute it to anybody.
 
+Quick start:
+
+python3 cdq.py --url alice.org --out alice.txt
+
+python cdf.py -i alice.txt --scan=.exe,.zip --outfile files.txt
+
