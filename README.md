@@ -7,9 +7,9 @@ This software is currently private and still in testing, do not distribute it to
 
 Quick start:
 
-`python3 cdq.py --url alice.org --out alice.txt`
+`python cdq.py --url alice.org --out alice.txt`
 
-`python3 cdf.py -i alice.txt --scan=.exe,.zip --make-list files.txt`
+`python cdf.py -i alice.txt --scan=.exe,.zip --make-list files.txt`
 
 Then you can download the files with wget using something like:
 
