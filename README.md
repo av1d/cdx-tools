@@ -12,6 +12,6 @@ Quick start:
 `python cdf.py -i alice.txt --scan=.exe,.zip --make-list files.txt`
 
 Then you can download the files with wget using something like:
-'wget --convert-links -x -nH --cut-dirs=2 -i files.txt'
+`wget --convert-links -x -nH --cut-dirs=2 -i files.txt`
 
 Tip: rename the files to cdq and cdf then chmod +x and place in /usr/local/bin so you can activate them from any directory by just typing cdq or cdf.
