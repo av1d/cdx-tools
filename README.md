@@ -9,7 +9,7 @@ Quick start:
 
 `python3 cdq.py --url alice.org --out alice.txt`
 
-`python cdf.py -i alice.txt --scan=.exe,.zip --make-list files.txt`
+`python3 cdf.py -i alice.txt --scan=.exe,.zip --make-list files.txt`
 
 Then you can download the files with wget using something like:
 
