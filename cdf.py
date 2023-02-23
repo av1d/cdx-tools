@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from pympler.asizeof import asizeof
 
-version = '0.5b'
+version = '0.6b'
 
 #-------------------------------------#
 #         cdx-filter  by av1d         #
@@ -149,6 +149,16 @@ def setArgs():
                 + sep(),
     )
     parser.add_argument(
+        '-n',
+        '--make-html',
+        metavar='OUTPUTFILE',
+        required=False,
+        help=
+                "Makes a basic HTML file with links containing all results which\n"
+                + "open in a new window when clicked.\n"
+                + sep(),
+    )
+    parser.add_argument(
         '-k',
         '--json-out',
         metavar='OUT_FILE',
@@ -211,6 +221,15 @@ def setArgs():
             sys.exit(1)
 
     if (
+         args['make_html'] != None and
+         args['field']     != None
+    ):
+            print(
+                    "Error: You cannot use --field with --make-html" \
+            )
+            sys.exit(1)
+
+    if (
          args['json_out'] != None and
          args['field']     != None
     ):
@@ -234,6 +253,8 @@ def setArgs():
         checkFileExistence(args['outfile'], "outfile")
     if args['make_list'] != None:
         checkFileExistence(args['make_list'], "make_list")
+    if args['make_html'] != None:
+        checkFileExistence(args['make_html'], "make_html")
     if args['json_out'] != None:
         checkFileExistence(args['json_out'], "json_out")
 
@@ -241,9 +262,11 @@ def setArgs():
 
     global case_sensitive  # bool. case-sensitive or not
     global makeList        # bool. for plain text lists
+    global makeHTML        # bool. for HTML generation
     global infile          # str.  input CDX/JSON file
     global outfile         # str.  output file
     global listfile        # str.  plain text list file
+    global htmlfile        # str.  html filename
     global jsonOutFile     # bool. if outputting JSON
 
     if args['json_out'] != None:
@@ -259,12 +282,17 @@ def setArgs():
     infile   = args['infile']
     outfile  = args['outfile']
     listfile = args['make_list']
+    htmlfile = args['make_html']
 
     if args['make_list'] != None:
         makeList = True
     else:
         makeList = False
 
+    if args['make_html'] != None:
+        makeHTML = True
+    else:
+        makeHTML = False
 
 
 def checkInputFile(argument):
@@ -283,19 +311,48 @@ def checkFileExistence(filename, filearg):
         theFile = args['outfile']
     if filearg == "make_list":
         theFile = args['make_list']
+    if filearg == "make_html":
+        theFile = args['make_html']
     if filearg == "json_out":
         theFile = args['json_out']
     if os.path.isfile(filename):
         fileExists = input(
                             "File: " +
                             str(theFile) +
-                            " exists. Overwrite (y/n)? "
+                            " exists. Append (y/n)? "
         )
         if fileExists.lower() != "y":
             sys.exit(0)
         else:
             return True
 
+
+def formatHTML():
+    data = """
+        <style>
+        body, html {
+            font-size: 24px;
+            color: #fff;
+            background-color: #000;
+        }
+        li {
+            padding: 3px;
+        }
+        a:link {
+            color: #ccc;
+        }
+        a:visited {
+            color: #e343e8;
+        }
+        a:hover, a:active {
+            font-weight: bold;
+            color: #93ed0c;
+            background-color: #152a40;
+        }
+        </style>
+    """
+    with open(htmlfile, 'a') as f:
+        f.write(data + "\n")
 
 
 def generateOutput(url_string, timestamp):
@@ -344,6 +401,14 @@ def generateOutput(url_string, timestamp):
         with open(listfile, 'a') as f:
             f.write(outURL + "\n")
 
+    if makeHTML == True:
+        ht1 = '<li><a href="'
+        ht2 = outURL
+        ht3 = '" target="_blank">'
+        ht4 = '</a><br></li>'
+        outHTML = ht1 + ht2 + ht3 + ht2 + ht4
+        with open(htmlfile, 'a') as f:
+            f.write(outHTML + "\n")
 
 
 def generateJSONList(data):
@@ -476,7 +541,8 @@ def main():
 
     global currentCDXline  # str.  used for JSON output
 
-
+    if args['make_html'] != None:
+        formatHTML()
 
     ##  --textfile search
     if args['textfile'] != None:
@@ -618,6 +684,12 @@ def main():
                 + "To omit files being saved into folders with timestamps, use this:\n"
                 + "wget --convert-links -x -nH --cut-dirs=2 -i "
                 + str(args['make_list'])
+        )
+
+    if args['make_html'] != None:
+        print(
+                "\n"
+                + "HTML file list saved as " + str(args['make_html'])
         )
 
 
