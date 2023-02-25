@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from pympler.asizeof import asizeof
 
-version = '0.7b'
+version = '0.5b'
 
 #-------------------------------------#
 #         cdx-filter  by av1d         #
@@ -210,6 +210,12 @@ def setArgs():
                     "--scan, --textfile, --json or --field\n"
             )
             sys.exit(1)
+
+    if (args['make_list'] == args['infile']):
+        print(
+                "Error: You cannot use the same output name as the input file." \
+        )
+        sys.exit(1)
 
     if (
          args['make_list'] != None and
