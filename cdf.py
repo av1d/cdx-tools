@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from pympler.asizeof import asizeof
 
-version = '0.6b'
+version = '0.7b'
 
 #-------------------------------------#
 #         cdx-filter  by av1d         #
@@ -357,44 +357,12 @@ def formatHTML():
 
 def generateOutput(url_string, timestamp):
 
-    baseURL = urlparse(url_string)
-    baseURL = baseURL.netloc  # get domain+tld
-    baseURL = baseURL.split(':',1)[0]  # remove ports if any
-
-    if re.findall("^https?:\/\/[A-Za-z0-9:.]*([\/]{1}.*\/?)$", url_string):
-        remotePath = re.findall(
-                                 "^https?:\/\/[A-Za-z0-9:.]*([\/]{1}.*\/?)$",
-                                 url_string
-        )[0]  # get path (everthing after the tld)
-    else:
-        remotePath = "/"  # if nothing then it's just the root
-
-    percent_encode = quote(str(remotePath))  # url-encode the path
-    encoded_path = Path(percent_encode)  # create POSIX path
-    final_path = str(encoded_path)  # POSIX path to string
-    save_path = final_path
-
-    final_path = (
-                    baseURL  +
-                    final_path
-    )
-
-    save_path = (
-                    baseURL  +
-                    "/" + str(timestamp) +
-                    save_path
-    )  # add timestamp for organization purposes. ex: example.com/2004/files
-
-    # if path ends in / then we save it as index.html
-    if (url_string.endswith("/") or remotePath.endswith("/")):
-        final_path = (final_path + "index.html")
-
     wayback = "https://web.archive.org/web/"
     outURL = (
                 str(wayback) +
                 str(timestamp) +
                 "/" +
-                str(final_path)
+                str(url_string)
     )
 
     if makeList == True:
