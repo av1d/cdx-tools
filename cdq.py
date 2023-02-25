@@ -4,40 +4,37 @@
 import time
 startTime = time.time()
 import argparse
-import datetime
+import ijson
+
 import json
-import logging
 import os
-import random
-import requests
+import os.path
+import re
 import sys
-import threading
-import urllib.parse
 
 from pathlib import Path
+from requests.utils import quote
 from urllib.parse import urlparse
-from urllib.parse import unquote
-from urllib.parse import urlencode
+
+from pympler.asizeof import asizeof
+
+version = '0.9b'
+
+#-------------------------------------#
+#         cdx-filter  by av1d         #
+#-------------------------------------#
+#  https://github.com/av1d/cdx-tools  #
+#-------------------------------------#
 
 
 
-version = '0.8b'
-
-#-----------------------------------#
-#         cdx-query by av1d         #
-#-----------------------------------#
-# https://github.com/av1d/cdx-tools #
-#-----------------------------------#
-
-
- ########################################
-  ####  VISUAL
-   ###
-    ##
 def banner():
-    info1  = "+---------------------------+"
-    info2  = "\n|  cdx-query v" + version + " by av1d  |\n"
-    info3  = "\nQuickstart: cdxq.py --url example.com/path/ --out results.txt\n"
+    info1  = "+----------------------------+"
+    info2  = "\n|  cdx-filter v" + version + " by av1d  |\n"
+    if sys.argv[1] == "-h" or sys.argv[1] == "--help":
+        info3  = "\n Ultimately, you should read the manual!"
+    else:
+        info3  = ""
     banner = info1 + info2 + info1 + info3
     return banner
 
@@ -46,473 +43,283 @@ def sep():
     return "------------\n"
 
 
-def progress():
-    sys.stdout.write(".")
-    sys.sleep(1)
 
-
- #########################################
-  ####  ARGUMENT PARSING / SYNTAX CHECKING
-   ###
-    ##
-def setup():
-    ######################################
-    ## ARGPARSE
-    parser=argparse.ArgumentParser(
+def setArgs():
+    parser = argparse.ArgumentParser(
         description=banner(),
         usage=(
                 'use "python %(prog)s --help" for more information'
         ),
-        formatter_class = argparse.RawTextHelpFormatter,
+        formatter_class=argparse.RawTextHelpFormatter,
     )
-    # URL
     parser.add_argument(
-        '-u',
-        '--url',
-        metavar='URL',
+        '-i',
+        '--infile',
+        metavar='JSON_FILE',
         required=True,
         help=
-                "The URL to search for.\n"
+                "Input file which contains valid JSON retrieved from \n" \
+                "the CDX server.\n"
                 + sep(),
     )
-    # output file
-    parser.add_argument(
-        '-out',
-        '--out',
-        metavar='FILE',
-        required=False,
-        help=
-                "Output the CDX server response to this filename.\n"
-                + sep(),
-    )
-    # From date
-    parser.add_argument(
-        '-f',
-        '--from',
-        metavar='FROM_DATE',
-        required=False,
-        help=
-                "Search FROM this date. 1-14 digits.\n" \
-                "Example: --from 2004 or use a Wayback timestamp:\n" \
-                "--from 20040601150932\n" \
-                "Timestamp format: yyyyMMddhhmmss\n" \
-                "Omit --to and --from for all dates.\n"
-                + sep(),
-    )
-    # to date
-    parser.add_argument(
-        '-t',
-        '--to',
-        metavar='TO_DATE',
-        required=False,
-        help=
-                "Search up TO this date. 1-14 digits.\n" \
-                "Example: --to 2004 or use a Wayback timestamp:\n" \
-                "--to 20040601150932\n" \
-                "Timestamp format: yyyyMMddhhmmss\n" \
-                "Omit --to and --from for all dates.\n"
-               + sep(),
-    )
-    # matchType
-    parser.add_argument(
-        '-m',
-        '--matchtype',
-        choices=[
-                    'exact',
-                    'prefix',
-                    'host',
-                    'domain'
-        ],
-        required=False,
-        help=
-                "exact  - return results matching exactly:\n archive.org/about/.\n" \
-                "prefix - return results for all results\n under the path archive.org/about/.\n" \
-                "host   - return results from host archive.org.\n" \
-                "domain - return results from host archive.org and\n all subhosts *.archive.org.\n\n" \
-                "Default is 'domain' if the argument is omitted.\n"
-                + sep(),
-    )
-    # collapse
-    parser.add_argument(
-        '-c',
-        '--collapse',
-        metavar='VALUE',
-        required=False,
-        help=
-                "To use collapsing, add one or more collapse=field or\n" \
-                "collapse=field:N where N is the first N characters of\n field to test.\n" \
-                "Ex: --collapse digest - only show unique captures by\n digest (note that\n" \
-                "only adjacent digest are collapsed, duplicates elsewhere\n in the cdx are not affected).\n" \
-                "Ex: --collapse urlkey - only show unique urls in a prefix\n query (filtering out captures\n" \
-                "except first capture of a given url). This is similar to\n the old prefix query in\n" \
-                "wayback (note: this query may be slow at the moment).\n" \
-                "timestamp:N - example: timestamp:10 - show at most 1\n capture per hour\n" \
-                "(compare the first 10 digits of the timestamp field.\n" \
-                "Default is 'urlkey'\n"
-                + sep(),
-    )
-    # field order
     parser.add_argument(
         '-o',
-        '--order',
+        '--outfile',
+        metavar='OUTPUT_FILE',
+        required=False,
+        help=
+                "Output file. Filetype depends on method used.\n"
+                + sep(),
+    )
+    parser.add_argument(
+        '-c',
+        '--case-sensitive',
+        action='store_true',
+        required=False,
+        help=
+                "Case sensitive filtering on strings.\n" \
+                "Affects all search methods.\n" \
+                "Default: insensitive.\n"
+                + sep(),
+    )
+    parser.add_argument(
+        '-q',
+        '--quiet',
+        action='store_true',
+        required=False,
+        help=
+                "Suppress link output. Faster when saving to file. \n"
+                + sep(),
+    )
+    parser.add_argument(
+        '-s',
+        '--scan',
+        type=str,
+        metavar='STRINGS',
+        required=False,
+        help=
+                "Strings to scan for.\n" \
+                "Example usage:\n" \
+                "--scan=.exe,.JPG,.zip,\"/cgi-bin/x.cgi?\",\"space space\"\n" \
+                "Items are comma-separated, no spaces.\n" \
+                "Enclose strings with spaces and special characters in\n" \
+                "single or double quotes.\n"
+                + sep(),
+    )
+    parser.add_argument(
+        '-f',
+        '--field',
         nargs='+',
         required=False,
         help=
-                "\nField order - specifies which fields to return.\n" \
-                "Valid options: key, timestamp, url, mimetype, statuscode,\n" \
-                "digest, flags, length, offset, filename.\n\n" \
-                "Fields should be space-separated.\n" \
-                "Default is return all fields if argument is omitted.\n"
+                "Specifies which field in CDX file to search.\n" \
+                "Syntax:  --field [key] [string]\n" \
+                "Example: --field mimetype text/html\n" \
+                "Use with --outfile to save JSON result.\n"
                 + sep(),
     )
-    # inlude mimetypes
     parser.add_argument(
-        '-i',
-        '--include',
-        metavar='mimetype',
+        '-t',
+        '--textfile',
+        metavar='TEXTFILE',
         required=False,
         help=
-                "Return only this mimetype.\n" \
-                "Example: --include text/html\n" \
-                "Default is all types shown if omitted.\n"
+                "Use a plain text list containing one string per line \n" \
+                "as search terms to use on the CDX data.\n" \
                 + sep(),
     )
-    # exclude mimetypes
     parser.add_argument(
-        '-e',
-        '--exclude',
-        metavar='mimetype',
+        '-j',
+        '--json',
+        metavar='IN_FILE',
         required=False,
         help=
-                "Exclude this mimetype from results.\n" \
-                "Example: --exclude text/html\n"
+                "Load a valid JSON file containing custom keys with\n" \
+                "comma-separated values as search strings to search\n" \
+                "the CDX data with.\n"
                 + sep(),
     )
-    # limit first
     parser.add_argument(
-        '-l',
-        '--limit',
-        metavar='NUMBER',
+        '-m',
+        '--make-list',
+        metavar='OUTPUTFILE',
         required=False,
         help=
-                "Limit to first/last N results.\n" \
-                "Example (limit first 100): --limit 100\n" \
-                "Example (limit last 50):   --limit -50\n"
+                "Makes a plain text list of links containing all results.\n"
                 + sep(),
     )
-    # exclude HTTP status
     parser.add_argument(
-        '-x',
-        '--no-stat',
-        metavar='HTTP_STATUS_CODE',
+        '-n',
+        '--make-html',
+        metavar='OUTPUTFILE',
         required=False,
         help=
-                "Exclude results with this HTTP status code.\n" \
-                "Example: --no-stat 404\n"
+                "Makes a basic HTML file with links containing all results which\n"
+                + "open in a new window when clicked.\n"
                 + sep(),
     )
-    # include HTTP status
     parser.add_argument(
-        '-y',
-        '--yes-stat',
-        metavar='HTTP_STATUS_CODE',
+        '-k',
+        '--json-out',
+        metavar='OUT_FILE',
         required=False,
         help=
-                "Show only results with this HTTP status code.\n" \
-                "Example: --yes-stat 200\n"
+                "Save results to JSON file.\n" \
+                "Output can be scanned again to refine.\n" \
                 + sep(),
     )
-    # fast latest
     parser.add_argument(
-        '-fast',
-        '--fastlatest',
+        '-v',
+        '--version',
         action='store_true',
         required=False,
         help=
-                "May be set to return some number of latest\n" \
-                "results for an exact match and is faster than \n" \
-                "the standard last results search. \n" \
-                "Use with --limit\n"
-                + sep(),
-    )
-    # regex
-    parser.add_argument(
-        '-r',
-        '--regex',
-        metavar='[!]field:regex',
-        required=False,
-        help=
-                "field is one of the named CDX fields (listed in \n" \
-                "the JSON query) or an index of the field.\n" \
-                "Optional ! before query will return results that \n" \
-                "do NOT match the regex. Regex is any standard \n" \
-                "Java regex pattern. Entire value should be enclosed\n" \
-                "in single quotes. Example: --regex='!field:regex' \n"
-                + sep(),
-    )
-    # skip count
-    parser.add_argument(
-        '--showskipcount',
-        action='store_true',
-        required=False,
-        help=
-                "It is possible to track how many CDX lines were\n" \
-                "skipped due to Filtering and Collapsing by adding\n" \
-                "the special skipcount counter with --showskipcount.\n" \
-                "An optional endtimestamp count can also be used to\n" \
-                "print the timestamp of the last capture by adding:\n" \
-                "--lastskiptimestamp.\n"
-                + sep(),
-    )
-    # skip timestamp
-    parser.add_argument(
-        '--lastskiptimestamp',
-        action='store_true',
-        required=False,
-        help=
-                "See above.\n"
-                + sep(),
-    )
-    # dupe count
-    parser.add_argument(
-        '--showdupecount',
-        action='store_true',
-        required=False,
-        help=
-                "Using showDupeCount will only show unique captures.\n"
+                "Print version information then exit.\n"
                 + sep(),
     )
 
-    global args
+    global args  # dict
     args = vars(parser.parse_args())
 
-    ###################################
-    ##  check output file
-    ##
+    ##  SYNTAX/INPUT/FILE CHECKING
 
-    if args['out'] != None:
-        global outputFile
-        checkFileExistence(args['out'])  # check if file exists
-        outputFile = args['out']         # assign filename to var
-        del args['out']                  # delete the key from dictionary
-    else:
-        outputFile = ""
-
-    ###################################
-    ##  Syntax checking
-    ##   
-        
-    # --order choices is handled here instead because argparse is messy.
-    if args['order'] != None:
-        orderChoices=[
-                        'key',
-                        'timestamp',
-                        'url',
-                        'mimetype',
-                        'statuscode',
-                        'digest',
-                        'flags',
-                        'length',
-                        'offset',
-                        'filename',
-        ]
-        for option in args['order']:
-            if option not in orderChoices:
-                print(
-                        "Error: --order must only contain the " \
-                        "following space-separated values:\n" \
-                        "key, timestamp, url, mimetype, statuscode, digest, " \
-                        "flags, length, offset, filename."
-                )  # note: 'url' is changed later in code to actual 'original' param
-                sys.exit(1)
-
-    if args['include'] != None or args['exclude'] != None:
-        if (args['include']) and (args['exclude']):
-            print(
-                    "Error: --include and --exclude cannot be " \
-                    "used at the same time."
-            )
-            sys.exit(1)
-
-    if args['to'] != None and args['from'] != None:
-        if int(args['to']) - int(args['from']) < 0:
-            print(
-                    "Error: --to date is less than --from date."
-            )
-            sys.exit(1)
-
-    if args['yes_stat'] != None or args['no_stat'] != None:
-        if args['yes_stat'] != None and args['no_stat'] != None:
-            print(
-                    "Error: --yes-stat and --no-stat cannot be " \
-                    "used at the same time."
-            )
-            sys.exit(1)
-
-
-    # check date (timestamp).
-    try:  # try to convert to int, if fail it's not so exit
-        if args['to'] != None:
-            toDateInt = int(args['to'])
-        if args['from'] != None:
-            fromDateInt = int(args['from'])
-    except:
-        print("Error: Dates must be integers.\n")
+    argCount = 0
+    if args['scan']     != None:
+        argCount += 1
+    if args['textfile'] != None:
+        argCount += 1
+    if args['json']     != None:
+        argCount += 1
+    if args['field']    != None:
+        argCount += 1
+    if argCount > 1:
+        print(
+                "Error: you can only use one of:\n"
+                "--scan, --textfile, --json or --field\n"
+        )
         sys.exit(1)
 
-    # check date format
-    if args['to'] != None:
-        if int(args['to']) < 1000:
+    if (
+            args['scan']     == None and
+            args['textfile'] == None and
+            args['json']     == None and
+            args['field']    == None
+    ):
             print(
-                    "Error: date must be 4-14 digits.\n"
+                    "Error: you must specify one of:\n"
+                    "--scan, --textfile, --json or --field\n"
             )
             sys.exit(1)
 
-    # check date format
-    if args['from'] != None:
-        if int(args['from']) < 1000:
+    if (
+         args['make_list'] != None and
+         args['field']     != None
+    ):
             print(
-                    "Error: date must be 4-14 digits.\n"
+                    "Error: You cannot use --field with --make-list" \
             )
             sys.exit(1)
 
-    ##################################
-    ##  Special argument handling
-    ##  these args become variables
-
-    global inexclude  # str
-    inexclude = None
-
-    global regex  # str
-    regex = None
-
-    # mimetypes
-    if args['include'] != None:
-        inexclude = "mimetype:" + str(args['include'])
-        del args['include']  # we don't need it in the dictionary after this
-    if args['exclude'] != None:
-        inexclude = "!mimetype:" + str(args['exclude'])
-        del args['exclude']
-
-    # --regex
-    if args['regex'] != None:
-        regex = args['regex']  # assign to var for later
-        del args['regex']  # we don't need it in the dictionary after this
-
-    # remove scheme from URL being searched, encode if it contains params
-    if args['url'] != None:
-
-        if (
-               "http://" in args['url'] or
-               "https://" in args['url']
-        ):
-            if "http://" in args['url']:
-                args['url'] = args['url'].replace("http://", "")
-            if "https://" in args['url']:
-                args['url'] = args['url'].replace("https://", "")
-
-    if "/" in args['url']:  # if / after we stripped scheme
-        if args['matchtype'] == None:
+    if (
+         args['make_html'] != None and
+         args['field']     != None
+    ):
             print(
-                "/ found in URL. You should likely be using the argument -m prefix \n"
-                "if the URL looks like: example.com/something/ instead of example.com\n"
-                "Otherwise, remove the slash to avoid this message.\n"
+                    "Error: You cannot use --field with --make-html" \
             )
-            sys.exit(0)
+            sys.exit(1)
 
-    if "?" in args['url']:  # if URL contains a query we must encode it.
-        args['url'] = urllib.parse.quote_plus(args['url'])
+    if (
+         args['json_out'] != None and
+         args['field']     != None
+    ):
+            print(
+                    "Error: You cannot use --field with --json-out," \
+                    "use --outfile instead."
+            )
+            sys.exit(1)
 
-    ###################################
-    ##  Set default params
-    ##
-    ##  for ease of use
 
-    args['output'] = 'json'
-    args['gzip'] = 'false'
+    ##  Check file existence
 
-    if args['matchtype'] == None:  # pay attn to letter case
-        args['matchType'] = 'domain'
-        del args['matchtype']
+    if args['infile'] != None:
+        checkInputFile('infile')
+    if args['textfile'] != None:
+        checkInputFile('textfile')
+    if args['json'] != None:
+        checkInputFile('json')
+
+    if args['outfile'] != None:
+        checkFileExistence(args['outfile'], "outfile")
+    if args['make_list'] != None:
+        checkFileExistence(args['make_list'], "make_list")
+    if args['make_html'] != None:
+        checkFileExistence(args['make_html'], "make_html")
+    if args['json_out'] != None:
+        checkFileExistence(args['json_out'], "json_out")
+
+    ##  MISC OPTIONS
+
+    global case_sensitive  # bool. case-sensitive or not
+    global makeList        # bool. for plain text lists
+    global makeHTML        # bool. for HTML generation
+    global infile          # str.  input CDX/JSON file
+    global outfile         # str.  output file
+    global listfile        # str.  plain text list file
+    global htmlfile        # str.  html filename
+    global jsonOutFile     # bool. if outputting JSON
+
+    if args['json_out'] != None:
+        jsonOutFile = args['json_out']
     else:
-        args['matchType'] = args['matchtype']
-        del args['matchtype']
+        jsonOutFile = ""
 
-    if args['fastlatest'] == False:  # pay attn to letter case
-        del args['fastlatest']
+    if args['case_sensitive'] == False:
+        case_sensitive = False
     else:
-        args['fastLatest'] = 'true'
-        del args['fastlatest']
+        case_sensitive = True
 
-    if args['showskipcount'] == False:  # pay attn to letter case
-        del args['showskipcount']
+    infile   = args['infile']
+    outfile  = args['outfile']
+    listfile = args['make_list']
+    htmlfile = args['make_html']
+
+    if args['make_list'] != None:
+        makeList = True
     else:
-        args['showSkipCount'] = 'true'
-        del args['showskipcount']
+        makeList = False
 
-    if args['lastskiptimestamp'] == False:  # pay attn to letter case
-        del args['lastskiptimestamp']
+    if args['make_html'] != None:
+        makeHTML = True
     else:
-        args['lastSkipTimestamp'] = 'true'
-        del args['lastskiptimestamp']
-
-    if args['showdupecount'] == False:  # pay attn to letter case
-        del args['showdupecount']
-    else:
-        args['showDupeCount'] = 'true'
-        del args['showdupecount']
-
-    if args['collapse'] == None:  # set default "urlkey"
-        args['collapse'] = 'urlkey'
-
-    # if we didn't specify statuscode or order, we'll specify fields to return
-    # so that it's quicker. We don't need statuscode field because if not
-    # specified, the default statuscode when not specified is http 200,
-    # so it is pointless to not use this.
-    if args['no_stat'] == None or args['yes_stat'] == None:
-        if args['order'] == None:
-            args['order'] = ['timestamp', 'url']
-
-    if args['yes_stat'] == None:   # set default http 200 status
-        args['filter'] = 'statuscode:200'
-        del args['yes_stat']
-
-    try:  # try because if 'None', key will be deleted and this will throw exception
-        if args['yes_stat'] != None:
-            args['filter'] = "statuscode:" + str(args['yes_stat'])
-            del args['yes_stat']
-    except:
-        pass
-
-    if args['no_stat'] != None:
-        args['filter'] = "!statuscode:" + str(args['no_stat'])
-        del args['no_stat']
-
-    # build order parameter
-    if args['order'] != None:
-        # replaces "url" with proper param name "original" for user-friendliness:
-        orderList     = ['original' if x=='url' else x for x in args['order']]
-        orderList     = ','.join(orderList)  # comma sep. list
-        args['order'] = orderList            # assign list to key
-        args['fl']    = args.pop('order')    # rename key
-
-    # clean up anything else set to None or False so they don't end up as params
-    global filtered  # dict.
-    filtered = {k: v for k, v in args.items() if v is not None}
-    filtered = {k: v for k, v in filtered.items() if v is not False}
+        makeHTML = False
 
 
- ########################################
-  ####  FILE NAMES
-   ###
-    ##
-def checkFileExistence(filename):
+def checkInputFile(argument):
 
+    if os.path.exists(args[argument]) == False:
+        print(
+                "Error: file " + str(args[argument]) + " doesn't exist."
+        )
+        sys.exit(1)
+
+
+
+def checkFileExistence(filename, filearg):
+
+    if filearg == "outfile":
+        theFile = args['outfile']
+    if filearg == "make_list":
+        theFile = args['make_list']
+    if filearg == "make_html":
+        theFile = args['make_html']
+    if filearg == "json_out":
+        theFile = args['json_out']
     if os.path.isfile(filename):
         fileExists = input(
-                            "File: "
-                            + str(filename)
-                            + " exists. Overwrite (y/n)? "
+                            "File: " +
+                            str(theFile) +
+                            " exists. Append (y/n)? "
         )
         if fileExists.lower() != "y":
             sys.exit(0)
@@ -520,149 +327,338 @@ def checkFileExistence(filename):
             return True
 
 
- ########################################
-  ####  URL CONSTRUCTION
-   ###
-    ##
-def constructURL():
-
-    global URL  # str.  final URL
-    
-    searchurl = "https://web.archive.org/cdx/search/cdx?"
-    
-    mainParams = filtered  # modified dict with no 'None' or 'False' values
-    mainParams = urlencode(mainParams)
-    parameters = mainParams
-
-    # The CDX API needs different occurrences of "filter" for each 
-    # filter and dictionaries can't share the same key.
-    # So, we will handle it separately and add it to
-    # the URL manually after everything else has been done. Order
-    # doesn't matter. Less confusing to me to handle it this way.
-
-    # if both --include or --exclude and --regex:
-    if inexclude != None and regex != None:
-        addonParams1 = "&filter=" + str(inexclude)
-        addonParams2 = "&filter=" + str(regex)
-        parameters = mainParams + addonParams
-    else:  # check if only one was specified
-        if inexclude !=None:                           # if --include or --exclude
-            addonParams = "&filter=" + str(inexclude)  # contruct parameter string
-            parameters = mainParams + addonParams      # concatenate old + new
-    
-        if regex != None:
-            addonParams = "&filter=" + str(regex)
-            parameters = mainParams + addonParams
-
-    
-    encodedURL = parameters           # URL with percent encoding
-    rawURL     = unquote(encodedURL)  # URL without percent encoding
-    URL        = searchurl + rawURL   # final URL
+def formatHTML():
+    data = """
+        <style>
+        body, html {
+            font-size: 24px;
+            color: #fff;
+            background-color: #000;
+        }
+        li {
+            padding: 3px;
+        }
+        a:link {
+            color: #ccc;
+        }
+        a:visited {
+            color: #e343e8;
+        }
+        a:hover, a:active {
+            font-weight: bold;
+            color: #93ed0c;
+            background-color: #152a40;
+        }
+        </style>
+    """
+    with open(htmlfile, 'a') as f:
+        f.write(data + "\n")
 
 
- ########################################
-  ####  Convert API response
-   ###  Turn the JSON response into one dictionary per line.
-    ##  The result is still valid JSON.
-def cdxToDict(cdx_response):
+def generateOutput(url_string, timestamp):
 
-    n = json.loads(cdx_response)
-    
-    keys = []  # holds JSON keys
+    wayback = "https://web.archive.org/web/"
+    outURL = (
+                str(wayback) +
+                str(timestamp) +
+                "/" +
+                str(url_string)
+    )
+
+    if makeList == True:
+        with open(listfile, 'a') as f:
+            f.write(outURL + "\n")
+
+    if makeHTML == True:
+        ht1 = '<li><a href="'
+        ht2 = outURL
+        ht3 = '" target="_blank">'
+        ht4 = '</a><br></li>'
+        outHTML = ht1 + ht2 + ht3 + ht2 + ht4
+        with open(htmlfile, 'a') as f:
+            f.write(outHTML + "\n")
+
+
+def generateJSONList(data):
+    with open(jsonOutFile, 'a') as f:
+        f.write(json.dumps(data) + "\n")
+
+
+
+def convertListToJSON():
+
+    jlist = []
+    with open(jsonOutFile) as f:
+        for line in f:
+            jlist.append(json.loads(line))
+    with open(jsonOutFile, 'w') as fp:
+        fp.write(
+                    '[\n' +
+                    ',\n'.join(json.dumps(i) for i in jlist) +
+                    '\n]'
+        )
+
+
+
+def checkMatch(url_string, timestamp):
+
+    global scanLINES  # int.  counter for --scan
+    global textLINES  # int.  counter for --textfile
+
+    originalString = url_string
+
+    for key in options.keys():
+        currentKey = options[key]
+        for string in currentKey:
+
+            if case_sensitive == False:
+                string        = string.lower()
+                url_string    = url_string.lower()
+
+            if string in url_string:
+                if args['quiet'] == False:
+                    print(originalString)
+
+                if scanType == 'json':
+                    jsonCounter[key] += 1
+                if scanType == 'scan':
+                    scanLINES += 1
+                if scanType == 'field':
+                    fieldLINES += 1
+                if scanType == 'textfile':
+                    textLINES += 1
+
+                generateOutput(originalString, timestamp)
+
+
+
+def loadCDX(infile):
+
+    global dictKey  # str.  holds URL field name from CDX file.
+
+    msg ="File isn't valid JSON or other error.\n"
 
     try:
-        for i in n[0]:
-            keys.append(i)  # add the keys to the list
+        with open(infile, 'r') as f:
+            data = json.load(f)
     except:
-        print("Invalid response found. Check contents of cdx-tools.temp file.")
+        print(msg)
         sys.exit(1)
 
-    x = [dict(zip(keys, l)) for l in n]  # create list of dictionaries
-    x.pop(0)  # remove first line containing JSON keys
-    
-    final_out = '[\n' + ',\n'.join(json.dumps(i) for i in x) + '\n]'  # format list
+    if 'file_url' in data[0].keys():
+        dictKey = 'file_url'
+    elif 'original' in data[0].keys():
+        dictKey = 'original'
+    else:
+        dictKey = None
+        print("Error: incompatible CDX format.\n" + msg)
+        sys.exit(1)
 
-    return(final_out)
-
-
- ########################################
-  ####  FETCH RESPONSE
-   ###
-    ##
-def fetchResponse():
-
-    timeoutSEC = 120  # http timeout in seconds
-
-    if args["url"] != None:  # create a unique filename
-
-        print("Fetching: " + URL)
-        print("Timeout set to: " + str(timeoutSEC) + " seconds")
-        print("Fetching the response may take a long time, do not stop the program...")
-
-        # construct user agent header
-        clientVersion = "cdx-query/" + version
-        headers = {"User-Agent": clientVersion}
-
-        #Download the response
-        try:
-            response = requests.get(
-                                        URL,
-                                        headers=headers,
-                                        timeout=timeoutSEC,
-                                        stream=True
-            )
-
-        except requests.exceptions.Timeout:
-            raise SystemExit("Connection timed out")
-        except requests.exceptions.RequestException as e:
-            raise SystemExit(e)
-
-        print(response.status_code, response.reason)
-
-        status_code = str(response.status_code)
-        if status_code != "200":  # exit unless 200
-            print("Received HTTP status: " + status_code)
-            sys.exit(0)
-
-        with open('cdx-tools.temp', 'w') as f:  # save in case it crashes processing
-            f.write(str(response.content))
-
-        print("Request complete. Saved to temp file cdx-tools.temp. Processing...")
-
-        cdx_out = cdxToDict(response.text)
-
-        if outputFile != "":
-
-            print("Saving as: " + outputFile)
-
-            with open(outputFile, 'w') as out_file:  # save it
-                out_file.write(cdx_out)
-
-                print("Done.")  
+    return data
 
 
- ########################################
-  ####  MAIN
-   ###
-    ##
+
+def loadJSON(input_file):
+
+    global options  # dict
+    options = {}
+
+    try:
+        with open(input_file, 'r') as f:
+            data = json.load(f)
+    except:
+        print("Error loading or parsing JSON file.\n")
+        sys.exit(1)
+
+    keys = data[0].keys()
+
+    for key in data[0]:
+        options[key] = data[0][key].split(',')
+
+
+
+
 def main():
 
-    logging.basicConfig(
-        format="%(pathname)s line%(lineno)s: %(message)s",
-        level=logging.INFO
-    )
+    try:
+        if sys.argv[1] == "-v" or sys.argv[1] == "--version":
+            print("cdx-filter v" + version)
+            sys.exit(0)
+    except:
+        print("Expected at least 1 argument. --help for help.")
+        sys.exit(1)
 
-    setup()
-    constructURL()
-    fetchResponse()
+
+    setArgs()
+
+    global infile
+    global outfile
+
+    data = loadCDX(infile)
+
+    global options
+    options = {}
+    global options_count
+    options_count = {}
+    global scanLINES
+    scanLINES = 0
+    global textLINES
+    textLINES = 0
+    global scanType
+    scanType = None
+
+    global currentCDXline  # str.  used for JSON output
+
+    if args['make_html'] != None:
+        formatHTML()
+
+    ##  --textfile search
+    if args['textfile'] != None:
+        scanType = 'textfile'
+        textInputFile = args['textfile']
+        with open(textInputFile, 'r') as tfile:
+            allstrings = tfile.read()  # read is probably fine for this
+            parseLines = allstrings.split('\n')  # remove empty/space/newline
+            textStrings = [line for line in parseLines if line.strip()]
+            options['textfile'] = textStrings  # copy list to options dict
+        count = 0
+        for line in data:  # for each line in the CDX file
+            fileURL       = data[count][dictKey]  # assign keys
+            fileTimestamp = data[count]['timestamp']
+            checkMatch(fileURL, fileTimestamp)  # scan
+            if jsonOutFile != "":  # if generating JSON
+                generateJSONList(line)  # write line to temp file
+            count += 1
+        if jsonOutFile != "":  # if generating JSON
+            convertListToJSON()  # write final JSON file
+
+    ##  --json search
+    if args['json'] != None:
+        scanType = 'json'
+        loadJSON(args['json'])
+        global jsonCounter
+        jsonCounter = {}
+        for key in options.keys():
+            jsonCounter[key] = 0  # fill dict with 0's to start counter at
+        count = 0
+        for line in data:  # for each line in the CDX file
+            fileURL       = data[count][dictKey]  # assign keys
+            fileTimestamp = data[count]['timestamp']
+            checkMatch(fileURL, fileTimestamp)  # scan
+            if jsonOutFile != "":  # if generating JSON
+                generateJSONList(line)  # write line to temp file
+            count += 1
+        if jsonOutFile != "":  # if generating JSON
+            convertListToJSON()  # write final JSON file
+
+    ##  --scan search
+    if args['scan'] != None:
+        scanType = 'scan'
+        scanList = args['scan'].split(',')  # split input string into list
+        options['scan'] = scanList          # add the list to the dict to scan
+        count = 0
+        for line in data:
+            fileURL       = data[count][dictKey]
+            fileTimestamp = data[count]['timestamp']
+            checkMatch(fileURL, fileTimestamp)
+            if jsonOutFile != "":  # if generating JSON
+                generateJSONList(line)  # write line to temp file
+            count += 1
+        if jsonOutFile != "":  # if generating JSON
+           convertListToJSON()  # write final JSON file
+
+    ##  --field search
+    if args['field'] != None:
+        scanType = 'field'
+        fieldList = args['field']  # get list of provided fields to search
+        fieldLINES = 0  # hit counter
+   
+        if args['outfile'] != None:  # if --outfile specified
+            fieldOUT = True
+        else:
+            fieldOUT = False
+
+        count = 0
+
+        for line in data:
+            if case_sensitive == False:  # if case insensitive
+                searchVal = fieldList[1].lower()
+                dataLine  = data[count][fieldList[0]].lower()
+            else:  # case sensitive
+                searchVal = fieldList[1]
+                dataLine  = data[count][fieldList[0]]
+            if searchVal == dataLine:
+                if args['quiet'] == False:  # if not suppressing output
+                    print(line)  # print it
+                if fieldOUT == True:  # if --outfile specified
+                    with open(args['outfile'], 'a') as f:
+                        f.write(json.dumps(line) + "\n")
+                fieldLINES += 1
+            count += 1
+
+        if fieldOUT == True:
+            flist = []
+            with open(args['outfile']) as f:
+                for line in f:
+                    flist.append(json.loads(line))
+            with open(args['outfile'], 'w') as fp:
+                fp.write(
+                            '[\n' +
+                            ',\n'.join(json.dumps(i) for i in flist) +
+                            '\n]'
+                )
+
+
+    ##  RESULTS
+    print("\nScan complete.")
+
+    if case_sensitive == True:
+        msg = "Performed case -sensitive- search."
+    else:
+        msg = "Performed case insensitive search."
+    print(msg)
+
+    if scanType == 'json':
+        print("\nResults:")
+        print(json.dumps(jsonCounter, indent=4)+"\n")
+
+    countType = 0
+    if scanType == 'scan':
+        countType = scanLINES
+    if scanType == 'textfile':
+        countType = textLINES
+    if scanType == 'field':
+        countType = fieldLINES
+    if scanType == 'json':
+        for jsonkey in jsonCounter:
+            countType += jsonCounter[jsonkey]
 
     executionTime = (time.time() - startTime)
-    
+
     print(
-            "\nExecution time: "
-            + str(executionTime)
-            + " seconds"
+            "Found: " +
+            str(countType) +
+            " files." +
+            "\nExecution time: " +
+            str(executionTime) +
+            " seconds"
     )
+
+    if args['make_list'] != None:
+        print(
+                "\n"
+                + "To use the generated list with wget, issue this command:\n"
+                + "wget -i " + str(args['make_list']) + "\n"
+                + "To omit files being saved into folders with timestamps, use this:\n"
+                + "wget --convert-links -x -nH --cut-dirs=2 -i "
+                + str(args['make_list'])
+        )
+
+    if args['make_html'] != None:
+        print(
+                "\n"
+                + "HTML file list saved as " + str(args['make_html'])
+        )
 
 
 
