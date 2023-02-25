@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from pympler.asizeof import asizeof
 
-version = '0.5b'
+version = '0.8b'
 
 #-------------------------------------#
 #         cdx-filter  by av1d         #
