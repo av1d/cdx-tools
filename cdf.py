@@ -11,6 +11,7 @@ import os
 import os.path
 import re
 import sys
+import textwrap
 
 from pathlib import Path
 from requests.utils import quote
@@ -18,7 +19,7 @@ from urllib.parse import urlparse
 
 from pympler.asizeof import asizeof
 
-version = '0.8b'
+version = '0.9b'
 
 #-------------------------------------#
 #         cdx-filter  by av1d         #
@@ -334,7 +335,11 @@ def checkFileExistence(filename, filearg):
 
 
 def formatHTML():
-    data = """
+    data = """        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+        <title>Wayback Machine Links</title>
+        <meta charset="UTF-8">
         <style>
         body, html {
             font-size: 24px;
@@ -356,7 +361,11 @@ def formatHTML():
             background-color: #152a40;
         }
         </style>
+        </head>
+        <body>
+        <ul>
     """
+    data = textwrap.dedent(data)
     with open(htmlfile, 'a') as f:
         f.write(data + "\n")
 
@@ -379,7 +388,7 @@ def generateOutput(url_string, timestamp):
         ht1 = '<li><a href="'
         ht2 = outURL
         ht3 = '" target="_blank">'
-        ht4 = '</a><br></li>'
+        ht4 = '</a></li>'
         outHTML = ht1 + ht2 + ht3 + ht2 + ht4
         with open(htmlfile, 'a') as f:
             f.write(outHTML + "\n")
@@ -513,7 +522,6 @@ def main():
     global scanType
     scanType = None
 
-    global currentCDXline  # str.  used for JSON output
 
     if args['make_html'] != None:
         formatHTML()
@@ -661,6 +669,17 @@ def main():
         )
 
     if args['make_html'] != None:
+
+        data = """
+               </ul>
+               <!-- list generated with cdx-tools https://github.com/av1d/cdx-tools/ -->
+               </body>
+               </html>
+               """
+        data = textwrap.dedent(data)
+        with open(htmlfile, 'a') as f:
+            f.write(data + "\n")
+
         print(
                 "\n"
                 + "HTML file list saved as " + str(args['make_html'])
