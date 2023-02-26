@@ -12,14 +12,15 @@ import os.path
 import re
 import sys
 import textwrap
+import urllib.parse
 
 from pathlib import Path
 from requests.utils import quote
-from urllib.parse import urlparse
+#from urllib.parse import urlparse
 
 from pympler.asizeof import asizeof
 
-version = '0.9b'
+version = '1.0b'
 
 #-------------------------------------#
 #         cdx-filter  by av1d         #
@@ -59,7 +60,7 @@ def setArgs():
         metavar='JSON_FILE',
         required=True,
         help=
-                "Input file which contains valid JSON retrieved from \n" \
+                "Input file which contains valid JSON retrieved from \n" +
                 "the CDX server.\n"
                 + sep(),
     )
@@ -78,8 +79,8 @@ def setArgs():
         action='store_true',
         required=False,
         help=
-                "Case sensitive filtering on strings.\n" \
-                "Affects all search methods.\n" \
+                "Case sensitive filtering on strings.\n" +
+                "Affects all search methods.\n" +
                 "Default: insensitive.\n"
                 + sep(),
     )
@@ -99,11 +100,11 @@ def setArgs():
         metavar='STRINGS',
         required=False,
         help=
-                "Strings to scan for.\n" \
-                "Example usage:\n" \
-                "--scan=.exe,.JPG,.zip,\"/cgi-bin/x.cgi?\",\"space space\"\n" \
-                "Items are comma-separated, no spaces.\n" \
-                "Enclose strings with spaces and special characters in\n" \
+                "Strings to scan for.\n" +
+                "Example usage:\n" +
+                "--scan=.exe,.JPG,.zip,\"/cgi-bin/x.cgi?\",\"space space\"\n" +
+                "Items are comma-separated, no spaces.\n" +
+                "Enclose strings with spaces and special characters in\n" +
                 "single or double quotes.\n"
                 + sep(),
     )
@@ -113,9 +114,9 @@ def setArgs():
         nargs='+',
         required=False,
         help=
-                "Specifies which field in CDX file to search.\n" \
-                "Syntax:  --field [key] [string]\n" \
-                "Example: --field mimetype text/html\n" \
+                "Specifies which field in CDX file to search.\n" +
+                "Syntax:  --field [key] [string]\n" +
+                "Example: --field mimetype text/html\n" +
                 "Use with --outfile to save JSON result.\n"
                 + sep(),
     )
@@ -125,8 +126,8 @@ def setArgs():
         metavar='TEXTFILE',
         required=False,
         help=
-                "Use a plain text list containing one string per line \n" \
-                "as search terms to use on the CDX data.\n" \
+                "Use a plain text list containing one string per line \n" +
+                "as search terms to use on the CDX data.\n"
                 + sep(),
     )
     parser.add_argument(
@@ -135,8 +136,8 @@ def setArgs():
         metavar='IN_FILE',
         required=False,
         help=
-                "Load a valid JSON file containing custom keys with\n" \
-                "comma-separated values as search strings to search\n" \
+                "Load a valid JSON file containing custom keys with\n" +
+                "comma-separated values as search strings to search\n" +
                 "the CDX data with.\n"
                 + sep(),
     )
@@ -155,8 +156,8 @@ def setArgs():
         metavar='OUTPUTFILE',
         required=False,
         help=
-                "Makes a basic HTML file with links containing all results which\n"
-                + "open in a new window when clicked.\n"
+                "Makes a basic HTML file with links containing all results which\n" +
+                "open in a new window when clicked.\n"
                 + sep(),
     )
     parser.add_argument(
@@ -165,8 +166,18 @@ def setArgs():
         metavar='OUT_FILE',
         required=False,
         help=
-                "Save results to JSON file.\n" \
-                "Output can be scanned again to refine.\n" \
+                "Save results to JSON file.\n" +
+                "Output can be scanned again to refine.\n"
+                + sep(),
+    )
+    parser.add_argument(
+        '-e',
+        '--enumerate',
+        metavar='OUT_FILE',
+        required=False,
+        help=
+                "Subdomain enumeration.\n" +
+                "Create a list of all subhosts.\n"
                 + sep(),
     )
     parser.add_argument(
@@ -185,36 +196,43 @@ def setArgs():
     ##  SYNTAX/INPUT/FILE CHECKING
 
     argCount = 0
-    if args['scan']     != None:
+    if args['scan']      != None:
         argCount += 1
-    if args['textfile'] != None:
+    if args['textfile']  != None:
         argCount += 1
-    if args['json']     != None:
+    if args['json']      != None:
         argCount += 1
-    if args['field']    != None:
+    if args['field']     != None:
+        argCount += 1
+    if args['enumerate'] != None:
         argCount += 1
     if argCount > 1:
         print(
-                "Error: you can only use one of:\n"
-                "--scan, --textfile, --json or --field\n"
+                "Error: you can only use one of:\n" +
+                "--scan, --textfile, --json, --field or --enumerate\n"
         )
         sys.exit(1)
 
     if (
-            args['scan']     == None and
-            args['textfile'] == None and
-            args['json']     == None and
-            args['field']    == None
+            args['scan']      == None and
+            args['textfile']  == None and
+            args['json']      == None and
+            args['field']     == None and
+            args['enumerate'] == None
     ):
             print(
-                    "Error: you must specify one of:\n"
-                    "--scan, --textfile, --json or --field\n"
+                    "Error: you must specify one of:\n" +
+                    "--scan, --textfile, --json, --field or --enumerate\n"
             )
+            sys.exit(1)
+
+    if (args['enumerate'] != None and args['infile'] == None):
+            print("Error: you must specify an --infile when using --enumerate.\n")
             sys.exit(1)
 
     if (args['make_list'] == args['infile']):
         print(
-                "Error: You cannot use the same output name as the input file." \
+                "Error: You cannot use the same output name as the input file."
         )
         sys.exit(1)
 
@@ -223,7 +241,7 @@ def setArgs():
          args['field']     != None
     ):
             print(
-                    "Error: You cannot use --field with --make-list" \
+                    "Error: You cannot use --field with --make-list"
             )
             sys.exit(1)
 
@@ -232,7 +250,7 @@ def setArgs():
          args['field']     != None
     ):
             print(
-                    "Error: You cannot use --field with --make-html" \
+                    "Error: You cannot use --field with --make-html"
             )
             sys.exit(1)
 
@@ -241,7 +259,7 @@ def setArgs():
          args['field']     != None
     ):
             print(
-                    "Error: You cannot use --field with --json-out," \
+                    "Error: You cannot use --field with --json-out," +
                     "use --outfile instead."
             )
             sys.exit(1)
@@ -264,6 +282,8 @@ def setArgs():
         checkFileExistence(args['make_html'], "make_html")
     if args['json_out'] != None:
         checkFileExistence(args['json_out'], "json_out")
+    if args['enumerate'] != None:
+        checkFileExistence(args['enumerate'], "enumerate")
 
     ##  MISC OPTIONS
 
@@ -274,7 +294,13 @@ def setArgs():
     global outfile         # str.  output file
     global listfile        # str.  plain text list file
     global htmlfile        # str.  html filename
+    global enumfile        # str.  output file for subhost enumeration
     global jsonOutFile     # bool. if outputting JSON
+
+    if args['enumerate'] != None:
+        enumfile = args['enumerate']
+    else:
+        enumfile = ""
 
     if args['json_out'] != None:
         jsonOutFile = args['json_out']
@@ -322,6 +348,8 @@ def checkFileExistence(filename, filearg):
         theFile = args['make_html']
     if filearg == "json_out":
         theFile = args['json_out']
+    if filearg == "enumerate":
+        theFile = args['enumerate']
     if os.path.isfile(filename):
         fileExists = input(
                             "File: " +
@@ -580,6 +608,27 @@ def main():
             count += 1
         if jsonOutFile != "":  # if generating JSON
            convertListToJSON()  # write final JSON file
+
+    ##  --enumerate search
+    if args['enumerate'] != None:
+        global subhostlist
+        subhostList = []
+        count = 0
+        for line in data:
+            fileURL = data[count][dictKey]
+            theHost = urllib.parse.urlsplit(fileURL)
+            theHost = theHost.netloc
+            if theHost not in subhostList:
+                subhostList.append(theHost)
+            count += 1
+        with open(str(args['enumerate']), 'w') as f:
+            for line in subhostList:
+                f.write(line + "\n")
+        print(
+              "Found " + (str(len(subhostList))) + " hosts.\n" +
+              "List saved to: " + str(args['enumerate']) + "\n"
+        )
+        sys.exit(0)
 
     ##  --field search
     if args['field'] != None:
