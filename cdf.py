@@ -20,7 +20,7 @@ from requests.utils import quote
 
 from pympler.asizeof import asizeof
 
-version = '1.0b'
+version = '1.1b'
 
 #-------------------------------------#
 #         cdx-filter  by av1d         #
@@ -734,6 +734,14 @@ def main():
                 + "HTML file list saved as " + str(args['make_html'])
         )
 
+    if "~" in args['scan']:  # warn on tilde usage in case Wayback saved encoded URL
+        print(
+              "\nI see you used a ~ in your search query.\n"
+            + "You may also want to search ussing the URL encoded version, too.\n"
+            + "Replace the tilde (~) with %7E to search encoded variations.\n"
+            )
+
+    # do we need to warn for other encoded characters?
 
 
 if __name__ == '__main__':
