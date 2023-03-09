@@ -21,7 +21,7 @@ from urllib.parse import urlencode
 
 
 
-version = '1.0b'
+version = '1.1b'
 
 #-----------------------------------#
 #         cdx-query by av1d         #
@@ -32,8 +32,6 @@ version = '1.0b'
 
  ########################################
   ####  VISUAL
-   ###
-    ##
 def banner():
     info1  = "+---------------------------+"
     info2  = "\n|  cdx-query v" + version + " by av1d  |\n"
@@ -53,8 +51,6 @@ def progress():
 
  #########################################
   ####  ARGUMENT PARSING / SYNTAX CHECKING
-   ###
-    ##
 def setup():
     ######################################
     ## ARGPARSE
@@ -93,11 +89,11 @@ def setup():
         metavar='FROM_DATE',
         required=False,
         help=
-                "Search FROM this date. 1-14 digits.\n" \
-                "Example: --from 2004 or use a Wayback timestamp:\n" \
-                "--from 20040601150932\n" \
-                "Timestamp format: yyyyMMddhhmmss\n" \
-                "Omit --to and --from for all dates.\n"
+                "Search FROM this date. 1-14 digits.\n"
+                + "Example: --from 2004 or use a Wayback timestamp:\n"
+                + "--from 20040601150932\n"
+                + "Timestamp format: yyyyMMddhhmmss\n"
+                + "Omit --to and --from for all dates.\n"
                 + sep(),
     )
     # to date
@@ -107,12 +103,12 @@ def setup():
         metavar='TO_DATE',
         required=False,
         help=
-                "Search up TO this date. 1-14 digits.\n" \
-                "Example: --to 2004 or use a Wayback timestamp:\n" \
-                "--to 20040601150932\n" \
-                "Timestamp format: yyyyMMddhhmmss\n" \
-                "Omit --to and --from for all dates.\n"
-               + sep(),
+                "Search up TO this date. 1-14 digits.\n"
+                + "Example: --to 2004 or use a Wayback timestamp:\n"
+                + "--to 20040601150932\n"
+                + "Timestamp format: yyyyMMddhhmmss\n"
+                +  "Omit --to and --from for all dates.\n"
+                + sep(),
     )
     # matchType
     parser.add_argument(
@@ -126,12 +122,12 @@ def setup():
         ],
         required=False,
         help=
-                "exact  - return results matching exactly:\n archive.org/about/.\n" \
-                "prefix - return results for all results\n under the path archive.org/about/.\n" \
-                "host   - return results from host archive.org.\n" \
-                "domain - return results from host archive.org and\n all subhosts *.archive.org.\n" \
-                "Note: The domain mode is only available if the CDX is in SURT-order format.\n\n"
-                "Default is 'domain' if the argument is omitted.\n"
+                "exact  - return results matching exactly:\n archive.org/about/.\n"
+                + "prefix - return results for all results\n under the path archive.org/about/.\n"
+                + "host   - return results from host archive.org.\n"
+                + "domain - return results from host archive.org and\n all subhosts *.archive.org.\n"
+                + "Note: The domain mode is only available if the CDX is in SURT-order format.\n\n"
+                + "Default is 'domain' if the argument is omitted.\n"
                 + sep(),
     )
     # collapse
@@ -141,16 +137,17 @@ def setup():
         metavar='VALUE',
         required=False,
         help=
-                "To use collapsing, add one or more collapse=field or\n" \
-                "collapse=field:N where N is the first N characters of\n field to test.\n" \
-                "Ex: --collapse digest - only show unique captures by\n digest (note that\n" \
-                "only adjacent digest are collapsed, duplicates elsewhere\n in the cdx are not affected).\n" \
-                "Ex: --collapse urlkey - only show unique urls in a prefix\n query (filtering out captures\n" \
-                "except first capture of a given url). This is similar to\n the old prefix query in\n" \
-                "wayback (note: this query may be slow at the moment).\n" \
-                "timestamp:N - example: timestamp:10 - show at most 1\n capture per hour\n" \
-                "(compare the first 10 digits of the timestamp field.\n" \
-                "Default is 'urlkey'\n"
+                "To use collapsing, add one or more collapse=field or\n"
+                + "collapse=field:N where N is the first N characters of\n field to test.\n"
+                + "Ex: --collapse digest - only show unique captures by\n digest (note that\n"
+                + "only adjacent digest are collapsed, duplicates elsewhere\n in the cdx are not affected).\n"
+                + "Ex: --collapse urlkey - only show unique urls in a prefix\n query (filtering out captures\n"
+                + "except first capture of a given url). This is similar to\n the old prefix query in\n"
+                + "wayback (note: this query may be slow at the moment).\n" \
+                + "timestamp:N - example: timestamp:10 - show at most 1\n capture per hour\n"
+                + "(compare the first 10 digits of the timestamp field.\n" \
+                + "Default is 'urlkey'.\n\m"
+                + "To turn off set the value to 'none' (--collapse none)\n"
                 + sep(),
     )
     # field order
@@ -160,11 +157,11 @@ def setup():
         nargs='+',
         required=False,
         help=
-                "\nField order - specifies which fields to return.\n" \
-                "Valid options: key, timestamp, url, mimetype, statuscode,\n" \
-                "digest, flags, length, offset, filename.\n\n" \
-                "Fields should be space-separated.\n" \
-                "Default is return all fields if argument is omitted.\n"
+                "Field order - specifies which fields to return.\n"
+                + "Valid options: key, timestamp, url, mimetype, statuscode,\n"
+                + "digest, flags, length, offset, filename.\n\n"
+                + "Fields should be space-separated.\n"
+                + "Default is return all fields if argument is omitted.\n"
                 + sep(),
     )
     # inlude mimetypes
@@ -174,9 +171,9 @@ def setup():
         metavar='mimetype',
         required=False,
         help=
-                "Return only this mimetype.\n" \
-                "Example: --include text/html\n" \
-                "Default is all types shown if omitted.\n"
+                "Return only this mimetype.\n"
+                + "Example: --include text/html\n"
+                + "Default is all types shown if omitted.\n"
                 + sep(),
     )
     # exclude mimetypes
@@ -186,8 +183,8 @@ def setup():
         metavar='mimetype',
         required=False,
         help=
-                "Exclude this mimetype from results.\n" \
-                "Example: --exclude text/html\n"
+                "Exclude this mimetype from results.\n"
+                + "Example: --exclude text/html\n"
                 + sep(),
     )
     # limit first
@@ -197,9 +194,9 @@ def setup():
         metavar='NUMBER',
         required=False,
         help=
-                "Limit to first/last N results.\n" \
-                "Example (limit first 100): --limit 100\n" \
-                "Example (limit last 50):   --limit -50\n"
+                "Limit to first/last N results.\n"
+                + "Example (limit first 100): --limit 100\n"
+                + "Example (limit last 50):   --limit -50\n"
                 + sep(),
     )
     # exclude HTTP status
@@ -209,8 +206,8 @@ def setup():
         metavar='HTTP_STATUS_CODE',
         required=False,
         help=
-                "Exclude results with this HTTP status code.\n" \
-                "Example: --no-stat 404\n"
+                "Exclude results with this HTTP status code.\n"
+                + "Example: --no-stat 404\n"
                 + sep(),
     )
     # include HTTP status
@@ -220,8 +217,8 @@ def setup():
         metavar='HTTP_STATUS_CODE',
         required=False,
         help=
-                "Show only results with this HTTP status code.\n" \
-                "Example: --yes-stat 200\n"
+                "Show only results with this HTTP status code.\n"
+                + "Example: --yes-stat 200\n"
                 + sep(),
     )
     # fast latest
@@ -231,10 +228,10 @@ def setup():
         action='store_true',
         required=False,
         help=
-                "May be set to return some number of latest\n" \
-                "results for an exact match and is faster than \n" \
-                "the standard last results search. \n" \
-                "Use with --limit\n"
+                "May be set to return some number of latest\n"
+                + "results for an exact match and is faster than \n"
+                + "the standard last results search. \n"
+                + "Use with --limit\n"
                 + sep(),
     )
     # regex
@@ -244,12 +241,12 @@ def setup():
         metavar='[!]field:regex',
         required=False,
         help=
-                "field is one of the named CDX fields (listed in \n" \
-                "the JSON query) or an index of the field.\n" \
-                "Optional ! before query will return results that \n" \
-                "do NOT match the regex. Regex is any standard \n" \
-                "Java regex pattern. Entire value should be enclosed\n" \
-                "in single quotes. Example: --regex='!field:regex' \n"
+                "field is one of the named CDX fields (listed in \n"
+                + "the JSON query) or an index of the field.\n"
+                + "Optional ! before query will return results that \n"
+                + "do NOT match the regex. Regex is any standard \n"
+                + "Java regex pattern. Entire value should be enclosed\n"
+                + "in single quotes. Example: --regex='!field:regex' \n"
                 + sep(),
     )
     # skip count
@@ -258,12 +255,12 @@ def setup():
         action='store_true',
         required=False,
         help=
-                "It is possible to track how many CDX lines were\n" \
-                "skipped due to Filtering and Collapsing by adding\n" \
-                "the special skipcount counter with --showskipcount.\n" \
-                "An optional endtimestamp count can also be used to\n" \
-                "print the timestamp of the last capture by adding:\n" \
-                "--lastskiptimestamp.\n"
+                "It is possible to track how many CDX lines were\n"
+                + "skipped due to Filtering and Collapsing by adding\n"
+                + "the special skipcount counter with --showskipcount.\n"
+                + "An optional endtimestamp count can also be used to\n"
+                + "print the timestamp of the last capture by adding:\n"
+                + "--lastskiptimestamp.\n"
                 + sep(),
     )
     # skip timestamp
@@ -290,8 +287,6 @@ def setup():
 
     ###################################
     ##  check output file
-    ##
-
     if args['out'] != None:
         global outputFile
         checkFileExistence(args['out'])  # check if file exists
@@ -302,8 +297,7 @@ def setup():
 
     ###################################
     ##  Syntax checking
-    ##   
-        
+
     # --order choices is handled here instead because argparse is messy.
     if args['order'] != None:
         orderChoices=[
@@ -417,8 +411,8 @@ def setup():
         if args['matchtype'] == None:
             print(
                 "/ found in URL. You should likely be using the argument -m prefix \n"
-                "if the URL looks like: example.com/something/ instead of example.com\n"
-                "Otherwise, remove the slash to avoid this message.\n"
+                "if the URL looks like: example.com/something/ instead of example.com/\n"
+                "Otherwise, remove the final slash to avoid this message.\n"
             )
             sys.exit(0)
 
@@ -467,6 +461,9 @@ def setup():
     if args['collapse'] == None:  # set default "urlkey"
         args['collapse'] = 'urlkey'
 
+    if args['collapse'] == "none":  # don't collapse anything
+        del args['collapse']
+
     # if we didn't specify statuscode or order, we'll specify fields to return
     # so that it's quicker. We don't need statuscode field because if not
     # specified, the default statuscode when not specified is http 200,
@@ -506,8 +503,6 @@ def setup():
 
  ########################################
   ####  FILE NAMES
-   ###
-    ##
 def checkFileExistence(filename):
 
     if os.path.isfile(filename):
@@ -524,8 +519,6 @@ def checkFileExistence(filename):
 
  ########################################
   ####  URL CONSTRUCTION
-   ###
-    ##
 def constructURL():
 
     global URL  # str.  final URL
@@ -572,12 +565,18 @@ def cdxToDict(cdx_response):
     
     keys = []  # holds JSON keys
 
-    try:
-        for i in n[0]:
-            keys.append(i)  # add the keys to the list
-    except:
-        print("Invalid response found. Check contents of " + tempFilename + " file.")
+    if not n:  # if list is empty...
+        print("\nError: Response file is empty. Likely the URL provided is invalid or is not archived.")
+        print("The response file was saved at: " + str(tempFilename) + " and can be examined.\n")
         sys.exit(1)
+
+    for i in n[0]:
+        try:
+            keys.append(i)  # add the keys to the list
+        except:
+            print("\nError: An unknown error has occurred. The response is missing the appropriate keys.\n")
+            print("The response file was saved at: " + str(tempFilename) + " and can be examined.\n")
+            sys.exit(1)
 
     x = [dict(zip(keys, l)) for l in n]  # create list of dictionaries
     x.pop(0)  # remove first line containing JSON keys
@@ -589,8 +588,6 @@ def cdxToDict(cdx_response):
 
  ########################################
   ####  FETCH RESPONSE
-   ###
-    ##
 def fetchResponse():
 
     timeoutSEC = 60  # http timeout in seconds
@@ -621,6 +618,7 @@ def fetchResponse():
         if str(response.status_code) == "200":
             print("Received HTTP status: ", response.status_code, response.reason, " - connected to server.")
 
+        global status_code
         status_code = str(response.status_code)
         if status_code != "200":  # exit unless 200
             print("Received HTTP status: " + status_code)
@@ -652,10 +650,9 @@ def fetchResponse():
                 print("Done.")  
 
 
+
  ########################################
   ####  MAIN
-   ###
-    ##
 def main():
 
     logging.basicConfig(
