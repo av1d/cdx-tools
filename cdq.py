@@ -315,7 +315,7 @@ def setup():
         for option in args['order']:
             if option not in orderChoices:
                 print(
-                        "Error: --order must only contain the " \
+                        "--- Error: --order must only contain the " \
                         "following space-separated values:\n" \
                         "key, timestamp, url, mimetype, statuscode, digest, " \
                         "flags, length, offset, filename."
@@ -325,7 +325,7 @@ def setup():
     if args['include'] != None or args['exclude'] != None:
         if (args['include']) and (args['exclude']):
             print(
-                    "Error: --include and --exclude cannot be " \
+                    "--- Error: --include and --exclude cannot be " \
                     "used at the same time."
             )
             sys.exit(1)
@@ -333,14 +333,14 @@ def setup():
     if args['to'] != None and args['from'] != None:
         if int(args['to']) - int(args['from']) < 0:
             print(
-                    "Error: --to date is less than --from date."
+                    "--- Error: --to date is less than --from date."
             )
             sys.exit(1)
 
     if args['yes_stat'] != None or args['no_stat'] != None:
         if args['yes_stat'] != None and args['no_stat'] != None:
             print(
-                    "Error: --yes-stat and --no-stat cannot be " \
+                    "--- Error: --yes-stat and --no-stat cannot be " \
                     "used at the same time."
             )
             sys.exit(1)
@@ -353,14 +353,14 @@ def setup():
         if args['from'] != None:
             fromDateInt = int(args['from'])
     except:
-        print("Error: Dates must be integers.\n")
+        print("--- Error: Dates must be integers.\n")
         sys.exit(1)
 
     # check date format
     if args['to'] != None:
         if int(args['to']) < 1000:
             print(
-                    "Error: date must be 4-14 digits.\n"
+                    "--- Error: date must be 4-14 digits.\n"
             )
             sys.exit(1)
 
@@ -368,7 +368,7 @@ def setup():
     if args['from'] != None:
         if int(args['from']) < 1000:
             print(
-                    "Error: date must be 4-14 digits.\n"
+                    "--- Error: date must be 4-14 digits.\n"
             )
             sys.exit(1)
 
@@ -566,7 +566,7 @@ def cdxToDict(cdx_response):
     keys = []  # holds JSON keys
 
     if not n:  # if list is empty...
-        print("\nError: Response file is empty. Likely the URL provided is invalid or is not archived.")
+        print("\n--- Error: Response file is empty. Likely the URL provided is invalid or is not archived.")
         print("The response file was saved at: " + str(tempFilename) + " and can be examined.\n")
         sys.exit(1)
 
@@ -574,7 +574,7 @@ def cdxToDict(cdx_response):
         try:
             keys.append(i)  # add the keys to the list
         except:
-            print("\nError: An unknown error has occurred. The response is missing the appropriate keys.\n")
+            print("\n--- Error: An unknown error has occurred. The response is missing the appropriate keys.\n")
             print("The response file was saved at: " + str(tempFilename) + " and can be examined.\n")
             sys.exit(1)
 
@@ -659,6 +659,14 @@ def main():
         format="%(pathname)s line%(lineno)s: %(message)s",
         level=logging.INFO
     )
+
+    if "--url" in sys.argv:
+        urlLoc = sys.argv.index("--url") + 1
+    elif "-u" in sys.argv:
+        urlLoc = sys.argv.index("-u") + 1
+    if isinstance(urlLoc, int) == True:
+        if "*" in sys.argv[urlLoc]:
+            print("--- Warning: Ensure strings with asterisks are enclosed in single quotes.")
 
     setup()
     constructURL()
