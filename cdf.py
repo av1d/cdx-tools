@@ -411,6 +411,7 @@ def formatHTML():
         f.write(data + "\n")
 
 
+
 def generateOutput(url_string, timestamp):
 
     wayback = "https://web.archive.org/web/"
