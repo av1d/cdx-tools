@@ -5,7 +5,6 @@ import time
 startTime = time.time()
 import argparse
 import ijson
-
 import json
 import os
 import os.path
@@ -16,11 +15,9 @@ import urllib.parse
 
 from pathlib import Path
 from requests.utils import quote
-#from urllib.parse import urlparse
 
-from pympler.asizeof import asizeof
 
-version = '1.1b'
+version = '1.2b'
 
 #-------------------------------------#
 #         cdx-filter  by av1d         #
@@ -118,6 +115,21 @@ def setArgs():
                 "Syntax:  --field [key] [string]\n" +
                 "Example: --field mimetype text/html\n" +
                 "Use with --outfile to save JSON result.\n"
+                + sep(),
+    )
+    parser.add_argument(
+        '-x',
+        '--exclude',
+        type=str,
+        metavar='NEGATIVE_STRINGS',
+        required=False,
+        help=
+                "Do not return results for URLs containing these words.\n" +
+                "Example usage:\n" +
+                "--exclude=www,.exe,cgi-bin\n" +
+                "Items are comma-separated, no spaces.\n" +
+                "Enclose strings with spaces and special characters in\n" +
+                "single or double quotes.\n"
                 + sep(),
     )
     parser.add_argument(
@@ -422,6 +434,7 @@ def generateOutput(url_string, timestamp):
             f.write(outHTML + "\n")
 
 
+
 def generateJSONList(data):
     with open(jsonOutFile, 'a') as f:
         f.write(json.dumps(data) + "\n")
@@ -447,6 +460,7 @@ def checkMatch(url_string, timestamp):
 
     global scanLINES  # int.  counter for --scan
     global textLINES  # int.  counter for --textfile
+    global neg_match
 
     originalString = url_string
 
@@ -458,20 +472,33 @@ def checkMatch(url_string, timestamp):
                 string        = string.lower()
                 url_string    = url_string.lower()
 
-            if string in url_string:
-                if args['quiet'] == False:
-                    print(originalString)
+            if neg_words:  # if negative keywords were specified
+                checkNegMatch(url_string)
 
-                if scanType == 'json':
-                    jsonCounter[key] += 1
-                if scanType == 'scan':
-                    scanLINES += 1
-                if scanType == 'field':
-                    fieldLINES += 1
-                if scanType == 'textfile':
-                    textLINES += 1
+            if neg_match == False:
+                if string in url_string:
+                    if args['quiet'] == False:
+                        print(originalString)
+    
+                    if scanType == 'json':
+                        jsonCounter[key] += 1
+                    if scanType == 'scan':
+                        scanLINES += 1
+                    if scanType == 'field':
+                        fieldLINES += 1
+                    if scanType == 'textfile':
+                        textLINES += 1
+    
+                    generateOutput(originalString, timestamp)
+    neg_match = False
 
-                generateOutput(originalString, timestamp)
+
+
+def checkNegMatch(url_string):
+    global neg_match
+    for word in neg_words:
+        if word in url_string:
+            neg_match = True
 
 
 
@@ -549,10 +576,19 @@ def main():
     textLINES = 0
     global scanType
     scanType = None
-
+    global neg_words
+    neg_words = []
+    global neg_match
+    neg_match = False
 
     if args['make_html'] != None:
         formatHTML()
+
+
+    ##  --exclude negative keywords.  build list of negative search keywords
+    if args['exclude'] != None:
+        neg_words = args['exclude'].split(',')  # split input string into list
+        options['exclude'] = neg_words          # add the list to the dict to scan
 
     ##  --textfile search
     if args['textfile'] != None:
