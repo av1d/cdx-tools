@@ -38,6 +38,7 @@ def banner():
     return banner
 
 
+
 def sep():
     return "------------\n"
 
@@ -460,7 +461,7 @@ def checkMatch(url_string, timestamp):
 
     global scanLINES  # int.  counter for --scan
     global textLINES  # int.  counter for --textfile
-    global neg_match
+    global neg_match  # bool. track if a negative keyword was found
 
     originalString = url_string
 
@@ -475,7 +476,7 @@ def checkMatch(url_string, timestamp):
             if neg_words:  # if negative keywords were specified
                 checkNegMatch(url_string)
 
-            if neg_match == False:
+            if neg_match == False:  # if no match on neg word, continue
                 if string in url_string:
                     if args['quiet'] == False:
                         print(originalString)
@@ -494,8 +495,8 @@ def checkMatch(url_string, timestamp):
 
 
 
-def checkNegMatch(url_string):
-    global neg_match
+def checkNegMatch(url_string):  # check for negative keywords, if specified
+    global neg_match  # bool. track if a negative keyword was found
     for word in neg_words:
         if word in url_string:
             neg_match = True
@@ -561,8 +562,8 @@ def main():
 
     setArgs()
 
-    global infile
-    global outfile
+    global infile    #str. input file
+    global outfile   #str. output file
 
     data = loadCDX(infile)
 
@@ -570,15 +571,15 @@ def main():
     options = {}
     global options_count
     options_count = {}
-    global scanLINES
+    global scanLINES  #int.  counts found items
     scanLINES = 0
-    global textLINES
+    global textLINES  #int.  counts found items
     textLINES = 0
-    global scanType
+    global scanType   #str.  tracks which type of search is being performed
     scanType = None
-    global neg_words
+    global neg_words  #list. contains negative search words
     neg_words = []
-    global neg_match
+    global neg_match  #bool. track if a negative keyword was found
     neg_match = False
 
     if args['make_html'] != None:
@@ -588,7 +589,6 @@ def main():
     ##  --exclude negative keywords.  build list of negative search keywords
     if args['exclude'] != None:
         neg_words = args['exclude'].split(',')  # split input string into list
-        options['exclude'] = neg_words          # add the list to the dict to scan
 
     ##  --textfile search
     if args['textfile'] != None:
