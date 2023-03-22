@@ -3,7 +3,8 @@ A collection of tools for working with the Wayback Machine CDX server which uses
 This set of tools allows you to heavily refine all results returned from any query.
 These tools are focused for archivists and researchers seeking particular items but they implement most of the Wayback CDX server funcitons so you can do almost anything to the API besides pagination and resuming sessions.
 
-The objective is to scan hosts for specific strings and filetypes in order to find items of interest.
+The objective is to scan hosts for specific strings and filetypes in order to find items of interest.  
+This is a very quick way to hunt out specific filenames or other things of interest.
 
 There are currently 3 tools with distinct purposes: cdx-query, cdx-filter and cdxpress.
 
