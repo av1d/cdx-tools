@@ -42,7 +42,7 @@ It outputs files compatible with itself so they can be re-refined.
 
 None of these packages download any files. Rather than reinvent the wheel, I've made the output (optionally) compatible with wget which is available for virtually any platform. This allows even more control over downloading than I could reasonably cram into this software.
 
-The best way to fully understand either is to issue the --help argument or [read this](https://github.com/internetarchive/wayback/blob/master/wayback-cdx-server/README.md)
+The best way to fully understand any of these tools is to issue the --help argument or [read this](https://github.com/internetarchive/wayback/blob/master/wayback-cdx-server/README.md)
 
 If you find a bug or something can be made better don't hesitate to post an issue / pull request.
 
