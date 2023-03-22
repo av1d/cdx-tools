@@ -15,7 +15,7 @@ cdxpress features:
 * writes output to plain text file and prints results to screen
 * supports to/from Wayback Machine dates (4 digit years up to 14 digit timestamps)
 
-An example to pull all .exe, .zip, .index.html and anything containing "/cgi-bin" from example.org (fictitious example, doesn't actually pull these files):  
+An example to pull all .exe, .zip, .index.html and anything containing "/cgi-bin/" from example.org (fictitious example, doesn't actually pull these files):  
 `cdxpress --url example.org --scan=.exe,.zip,index.html,"/cgi-bin/"`  
 
 Unlike cdx-query and cdx-filter, cdxpress doesn't offer any control over any other parameters, advanced filtering or list generation.
