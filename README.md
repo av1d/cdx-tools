@@ -1,4 +1,7 @@
 # cdx-tools
+
+NOT PUBLIC - DON'T SHARE THIS REPO YET.
+
 A collection of tools for working with the Wayback Machine CDX server which uses only Python built-ins, no obscure modules required.
 This set of tools allows you to heavily refine all results returned from any query.
 These tools are focused for archivists and researchers seeking particular items but they implement most of the Wayback CDX server funcitons so you can do almost anything to the API besides pagination and resuming sessions.
