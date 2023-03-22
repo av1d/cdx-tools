@@ -22,7 +22,7 @@ cdxpress features:
 An example to pull all .exe, .zip, .index.html and anything containing "/cgi-bin/" from example.org (fictitious example, doesn't actually pull these files):  
 `cdxpress --url example.org --scan=.exe,.zip,index.html,"/cgi-bin/"`  
 
-Unlike cdx-query and cdx-filter, cdxpress doesn't offer any control over any other parameters, advanced filtering or list generation.
+Unlike cdx-query and cdx-filter, cdxpress doesn't offer any control over any other parameters or advanced filtering.
 
 cdx-query offers precise refinement over every parameter sent to the CDX server. It supports every function on the API except for the advanced features (pagination and resuming search by session).
 It saves the output as valid JSON which can then be used with cdx-filter. The options are too numerous to list here, so just do `cdx-query --help` to see all available features.
