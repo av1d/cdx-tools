@@ -1,6 +1,6 @@
 # cdx-tools
 
-NOT PUBLIC - DON'T SHARE THIS REPO YET.
+NOT PUBLIC - DON'T SHARE THIS REPO OR ITS FILES YET.
 
 A collection of tools for working with the Wayback Machine CDX server which uses only Python built-ins, no obscure modules required.
 This set of tools allows you to heavily refine all results returned from any query.
