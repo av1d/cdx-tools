@@ -27,13 +27,16 @@ version = '0.2b'
 #  https://github.com/av1d/cdx-tools  #
 #-------------------------------------#
 
+# This is the express version of cdx-tools and is probably fine for most people.
+# though it is meant for quick pulls and lacks extensive features.
+# Visit the repo above for tools with much more control.
 
 
 def banner():
     info1  = "+----------------------------+"
     info2  = "\n|  cdxpress   v" + version + " by av1d  |\n"
     if sys.argv[1] == "-h" or sys.argv[1] == "--help":
-        info3  = "\n Ultimately, you should read the manual!"
+        info3  = "\nQuick start: cdxpress.py --url example.org --scan=.jpg,.png,.js,.css --out links.txt"
     else:
         info3  = ""
     banner = info1 + info2 + info1 + info3
