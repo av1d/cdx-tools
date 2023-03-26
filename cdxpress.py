@@ -19,7 +19,7 @@ from pathlib import Path
 from requests.utils import quote
 
 
-version = '0.1b'
+version = '0.2b'
 
 #-------------------------------------#
 #          cdxpress  by av1d          #
@@ -71,7 +71,8 @@ def setArgs():
                 "--scan=.exe,.JPG,.zip,\"/cgi-bin/x.cgi?\",\"space space\"\n" +
                 "Items are comma-separated, no spaces.\n" +
                 "Enclose strings with spaces and special characters in\n" +
-                "single or double quotes.\n"
+                "single or double quotes.\n" +
+                "Leave blank to return ALL files (example: --scan= ).\n"
                 + sep(),
     )
     parser.add_argument(
@@ -336,11 +337,15 @@ def main():
         else:
             matchType = "&matchType=prefix"
 
+    if thePath == '':  # fix an empty path, just for sanity
+        thePath = "/"
+
     cdxURL = "https://web.archive.org/cdx/search/cdx?"
     cdxURL = (
             cdxURL
           + "url="
           + theHost
+          + thePath
           + matchType
           + "&collapse=urlkey&output=json&gzip=false&filter=statuscode:200&fl=timestamp,original"
     )
