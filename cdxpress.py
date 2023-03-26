@@ -36,10 +36,12 @@ def banner():
     info1  = "+----------------------------+"
     info2  = "\n|  cdxpress   v" + version + " by av1d  |\n"
     if sys.argv[1] == "-h" or sys.argv[1] == "--help":
-        info3  = "\nQuick start: cdxpress.py --url example.org --scan=.jpg,.png,.js,.css --out links.txt"
+        info3 = "\nQuick start 1: cdxpress.py --url example.org --scan=.jpg,.png,.js,.css"
+        info4 = "\nQuick start 2: cdxpress.py --url example.org --scan=.ZIP,.TAR,.GZ --exclude=.exe,.jar --case-sensitive --from 1999 --to 2004 --out links.txt"
     else:
         info3  = ""
-    banner = info1 + info2 + info1 + info3
+        info4  = ""
+    banner = info1 + info2 + info1 + info3 + info4
     return banner
 
 def sep():
