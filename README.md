@@ -58,7 +58,7 @@ Then you can download the files with wget using something like:
 
 Tip: rename the files to cdq and cdf then chmod +x and place in /usr/local/bin so you can activate them from any directory by just typing cdq or cdf.
 
-Windows binaries will be made available soon.
+
 
 This project is not affiliated with The Internet Archive.
 This software comes without warranty, use at your own risk.
