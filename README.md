@@ -1,7 +1,5 @@
 # cdx-tools
 
-NOT PUBLIC - DON'T SHARE THIS REPO OR ITS FILES YET.
-
 A collection of tools for working with the Wayback Machine CDX server which uses only Python built-ins, no obscure modules required.
 This set of tools allows you to heavily refine all results returned from any query.
 These tools are focused for archivists and researchers seeking particular items but they implement most of the Wayback CDX server funcitons so you can do almost anything to the API besides pagination and resuming sessions.
@@ -18,6 +16,8 @@ cdxpress features:
 * negative keywords (exclude word)
 * writes output to plain text file and prints results to screen
 * supports to/from Wayback Machine dates (4 digit years up to 14 digit timestamps)
+
+Ultimately, you should run the program with the -h flag to get all the options as there are way too many to list here, but here's a quick start guide.
 
 An example to pull all .exe, .zip, .index.html and anything containing "/cgi-bin/" from example.org (fictitious example, doesn't actually pull these files):  
 `cdxpress --url example.org --scan=.exe,.zip,index.html,"/cgi-bin/"`  
@@ -62,3 +62,5 @@ Windows binaries will be made available soon.
 
 This project is not affiliated with The Internet Archive.
 This software comes without warranty, use at your own risk.
+
+This project isn't really supported anymore, feel free to post issues except feature requests. Pull requests are fine.
