@@ -17,7 +17,7 @@ cdxpress features:
 * writes output to plain text file and prints results to screen
 * supports to/from Wayback Machine dates (4 digit years up to 14 digit timestamps)
 
-Ultimately, you should run all of the programs with the -h flag to get all the options as there are way too many to list here, but here's a quick start guide.
+Ultimately, you should run all of the programs with the --help flag to get all the options as there are way too many to list here, but here's a quick start guide.
 
 An example to pull all .exe, .zip, .index.html and anything containing "/cgi-bin/" from example.org (fictitious example, doesn't actually pull these files):  
 `cdxpress --url example.org --scan=.exe,.zip,index.html,"/cgi-bin/"`  
